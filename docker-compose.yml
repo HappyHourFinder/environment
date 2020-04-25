@@ -1,0 +1,178 @@
+version: '3'
+services:
+  bar-db:
+    container_name: bar-db
+    image: postgres
+    environment:
+      POSTGRES_DB: bar
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+        - ./data/postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  discovery:
+    restart: always
+    container_name: discovery
+    build:
+      context: ./discovery
+      dockerfile: Dockerfile.build
+    networks:
+      - backend-network
+    ports:
+      - "8761:8761"
+
+  config-server:
+    restart: always
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile.build
+    environment:
+      - SPRING_PROFILES_ACTIVE=native,dev
+      - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
+      - SPRING_SECURITY_USER_NAME=${CONFIG_SERVER_USR}
+      - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
+    volumes:
+      - ./config:/config
+    networks:
+      - backend-network
+
+  zipkin:
+    restart: always
+    image: openzipkin/zipkin
+    networks:
+      - backend-network
+      - monitoring-network
+    ports:
+      - "9411:9411"
+
+  bar-service:
+    build:
+      context: ./bar-service
+      dockerfile: Dockerfile.build
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+    networks:
+      - backend-network
+    depends_on:
+      - bar-db
+      - discovery
+      - config-server
+      - zipkin
+
+  happy-hour-service:
+    build:
+      context: ./happy-hour-service
+      dockerfile: Dockerfile.build
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+    networks:
+      - backend-network
+    depends_on:
+      - discovery
+      - config-server
+      - zipkin
+
+
+
+
+  bar-composite:
+    build:
+      context: ./bar-composite
+      dockerfile: Dockerfile.build
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+    networks:
+      - backend-network
+    depends_on:
+      - discovery
+      - config-server
+      - zipkin
+
+  trip-service:
+    build:
+      context: ./trip-service
+      dockerfile: Dockerfile.build
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+    networks:
+      - backend-network
+    depends_on:
+      - discovery
+      - config-server
+      - zipkin
+
+
+
+
+  gateway:
+    restart: always
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile.build
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
+      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+    networks:
+      - backend-network
+    ports:
+     - "9090:9090"
+    depends_on:
+      - discovery
+      - config-server
+      - zipkin
+
+
+
+
+  admin-server:
+    restart: always
+    build:
+      context: ./admin
+      dockerfile: Dockerfile.build
+    networks:
+      - backend-network
+    ports:
+     - "8080:8080"
+
+
+
+
+  backend:
+    image: tianon/true
+    depends_on:
+      - bar-service
+      - bar-composite
+      - gateway
+
+  monitoring:
+    image: tianon/true
+    depends_on:
+      - admin-server
+
+
+
+
+networks:
+  backend-network:
+    driver: bridge
+  monitoring-network:
+    driver: bridge
