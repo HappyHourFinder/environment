@@ -4,10 +4,10 @@ services:
     container_name: bar-db
     image: postgres
     environment:
-      POSTGRES_DB: bar
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      PGDATA: /data/postgres
+      - POSTGRES_DB=bar
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - PGDATA=/data/postgres
     volumes:
         - ./data/postgres:/data/postgres
     ports:
@@ -20,7 +20,7 @@ services:
     restart: always
     container_name: discovery
     build:
-      context: ./discovery
+      context: ../discovery
       dockerfile: Dockerfile.build
     networks:
       - backend-network
@@ -30,7 +30,7 @@ services:
   config-server:
     restart: always
     build:
-      context: ./config-server
+      context: ../config-server
       dockerfile: Dockerfile.build
     environment:
       - SPRING_PROFILES_ACTIVE=native,dev
@@ -38,7 +38,7 @@ services:
       - SPRING_SECURITY_USER_NAME=${CONFIG_SERVER_USR}
       - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
     volumes:
-      - ./config:/config
+      - ../config:/config
     networks:
       - backend-network
 
@@ -53,13 +53,15 @@ services:
 
   bar-service:
     build:
-      context: ./bar-service
+      context: ../bar-service
       dockerfile: Dockerfile.build
     restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+      - SPRING_DATASOURCE_USER=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-changeme}
     networks:
       - backend-network
     depends_on:
@@ -70,7 +72,7 @@ services:
 
   happy-hour-service:
     build:
-      context: ./happy-hour-service
+      context: ../happy-hour-service
       dockerfile: Dockerfile.build
     restart: always
     environment:
@@ -89,7 +91,7 @@ services:
 
   bar-composite:
     build:
-      context: ./bar-composite
+      context: ../bar-composite
       dockerfile: Dockerfile.build
     restart: always
     environment:
@@ -105,7 +107,7 @@ services:
 
   trip-service:
     build:
-      context: ./trip-service
+      context: ../trip-service
       dockerfile: Dockerfile.build
     restart: always
     environment:
@@ -125,7 +127,7 @@ services:
   gateway:
     restart: always
     build:
-      context: ./api-gateway
+      context: ../api-gateway
       dockerfile: Dockerfile.build
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -146,7 +148,7 @@ services:
   admin-server:
     restart: always
     build:
-      context: ./admin
+      context: ../admin
       dockerfile: Dockerfile.build
     networks:
       - backend-network
