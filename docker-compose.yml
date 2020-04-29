@@ -4,16 +4,28 @@ services:
     container_name: bar-db
     image: postgres
     environment:
-      - POSTGRES_DB=bar
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
-      - PGDATA=/data/postgres
+      POSTGRES_DB: bar
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
     volumes:
-        - ./data/postgres:/data/postgres
-    ports:
-      - "5432:5432"
+        - ./data/postgres/bar:/data/postgres
     networks:
-      - backend-network
+      - bar-network
+    restart: unless-stopped
+
+  happy-hour-db:
+    container_name: happy-hour-db
+    image: postgres
+    environment:
+      POSTGRES_DB: happy-hour
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+      - ./data/postgres/happy-hour:/data/postgres
+    networks:
+      - happy-hour-network
     restart: unless-stopped
 
   discovery:
@@ -33,10 +45,10 @@ services:
       context: ../config-server
       dockerfile: Dockerfile.build
     environment:
-      - SPRING_PROFILES_ACTIVE=native,dev
-      - ENCRYPT_KEY=${CONFIG_SERVER_ENCRYPT_KEY}
-      - SPRING_SECURITY_USER_NAME=${CONFIG_SERVER_USR}
-      - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
+      SPRING_PROFILES_ACTIVE: native,dev
+      ENCRYPT_KEY: ${CONFIG_SERVER_ENCRYPT_KEY}
+      SPRING_SECURITY_USER_NAME: ${CONFIG_SERVER_USR}
+      SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PWD}
     volumes:
       - ../config:/config
     networks:
@@ -57,12 +69,14 @@ services:
       dockerfile: Dockerfile.build
     restart: always
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
-      - SPRING_DATASOURCE_USER=${POSTGRES_USER:-postgres}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      SPRING_PROFILES_ACTIVE: docker
+      CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
+      CONFIG_SERVER_PWD: ${CONFIG_SERVER_PWD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://bar-db:5432/bar
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     networks:
+      - bar-network
       - backend-network
     depends_on:
       - bar-db
@@ -76,12 +90,17 @@ services:
       dockerfile: Dockerfile.build
     restart: always
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+      SPRING_PROFILES_ACTIVE: docker
+      CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
+      CONFIG_SERVER_PWD: ${CONFIG_SERVER_PWD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://happy-hour-db:5432/happy-hour
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     networks:
+      - happy-hour-network
       - backend-network
     depends_on:
+      - happy-hour-db
       - discovery
       - config-server
       - zipkin
@@ -95,9 +114,9 @@ services:
       dockerfile: Dockerfile.build
     restart: always
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+      SPRING_PROFILES_ACTIVE: docker
+      CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
+      CONFIG_SERVER_PWD: ${CONFIG_SERVER_PWD}
     networks:
       - backend-network
     depends_on:
@@ -111,9 +130,9 @@ services:
       dockerfile: Dockerfile.build
     restart: always
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+      SPRING_PROFILES_ACTIVE: docker
+      CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
+      CONFIG_SERVER_PWD: ${CONFIG_SERVER_PWD}
     networks:
       - backend-network
     depends_on:
@@ -130,9 +149,9 @@ services:
       context: ../api-gateway
       dockerfile: Dockerfile.build
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+      SPRING_PROFILES_ACTIVE: docker
+      CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
+      CONFIG_SERVER_PWD: ${CONFIG_SERVER_PWD}
     networks:
       - backend-network
     ports:
@@ -162,6 +181,7 @@ services:
     image: tianon/true
     depends_on:
       - bar-service
+      - happy-hour-service
       - bar-composite
       - gateway
 
@@ -175,6 +195,10 @@ services:
 
 networks:
   backend-network:
+    driver: bridge
+  bar-network:
+    driver: bridge
+  happy-hour-network:
     driver: bridge
   monitoring-network:
     driver: bridge
