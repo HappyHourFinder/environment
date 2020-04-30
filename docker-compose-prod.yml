@@ -32,20 +32,13 @@ services:
     restart: always
     image: happyhourfinder/discovery
     container_name: discovery
-    build:
-      context: ../discovery
     networks:
       - backend-network
-    ports:
-      - "8761:8761"
 
   config-server:
     restart: always
     image: happyhourfinder/config-server
-    build:
-      context: ../config-server
     environment:
-      SPRING_PROFILES_ACTIVE: native,dev
       ENCRYPT_KEY: ${CONFIG_SERVER_ENCRYPT_KEY}
       SPRING_SECURITY_USER_NAME: ${CONFIG_SERVER_USR}
       SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PWD}
@@ -60,12 +53,9 @@ services:
     networks:
       - backend-network
       - monitoring-network
-    ports:
-      - "9411:9411"
 
   bar-service:
-    build:
-      context: ../bar-service
+    image: happyhourfinder/bar-service
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -84,8 +74,7 @@ services:
       - zipkin
 
   happy-hour-service:
-    build:
-      context: ../happy-hour-service
+    image: happyhourfinder/happy-hour-service
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -107,8 +96,7 @@ services:
 
 
   bar-composite:
-    build:
-      context: ../bar-composite
+    image: happyhourfinder/bar-composite
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -122,8 +110,7 @@ services:
       - zipkin
 
   trip-service:
-    build:
-      context: ../trip-service
+    image: happyhourfinder/trip-service
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -140,9 +127,7 @@ services:
 
 
   gateway:
-    restart: always
-    build:
-      context: ../api-gateway
+    image: happyhourfinder/api-gateway
     environment:
       SPRING_PROFILES_ACTIVE: docker
       CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
@@ -161,9 +146,7 @@ services:
 
   admin-server:
     restart: always
-    build:
-      context: ../admin
-      dockerfile: Dockerfile.build
+    image: happyhourfinder/admin-server
     networks:
       - backend-network
     ports:
