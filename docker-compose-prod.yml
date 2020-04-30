@@ -34,6 +34,8 @@ services:
     container_name: discovery
     networks:
       - backend-network
+    ports:
+      - "8761:8761"
 
   config-server:
     restart: always
@@ -53,6 +55,8 @@ services:
     networks:
       - backend-network
       - monitoring-network
+    ports:
+      - "9411:9411"
 
   bar-service:
     image: happyhourfinder/bar-service
