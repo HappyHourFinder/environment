@@ -146,7 +146,7 @@ services:
 
   admin-server:
     restart: always
-    image: happyhourfinder/admin-server
+    image: happyhourfinder/admin
     networks:
       - backend-network
     ports:
