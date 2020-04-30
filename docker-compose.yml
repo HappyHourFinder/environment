@@ -30,6 +30,7 @@ services:
 
   discovery:
     restart: always
+    image: happyhourfinder/discovery
     container_name: discovery
     build:
       context: ../discovery
@@ -41,6 +42,7 @@ services:
 
   config-server:
     restart: always
+    image: happyhourfinder/config-server
     build:
       context: ../config-server
       dockerfile: Dockerfile.build
@@ -66,7 +68,6 @@ services:
   bar-service:
     build:
       context: ../bar-service
-      dockerfile: Dockerfile.build
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -87,7 +88,6 @@ services:
   happy-hour-service:
     build:
       context: ../happy-hour-service
-      dockerfile: Dockerfile.build
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -111,7 +111,6 @@ services:
   bar-composite:
     build:
       context: ../bar-composite
-      dockerfile: Dockerfile.build
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -127,7 +126,6 @@ services:
   trip-service:
     build:
       context: ../trip-service
-      dockerfile: Dockerfile.build
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -147,7 +145,6 @@ services:
     restart: always
     build:
       context: ../api-gateway
-      dockerfile: Dockerfile.build
     environment:
       SPRING_PROFILES_ACTIVE: docker
       CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
