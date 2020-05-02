@@ -1,0 +1,84 @@
+version: '3'
+services:
+  bar-db:
+    container_name: bar-db
+    image: postgres
+    environment:
+      POSTGRES_DB: bar
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+        - ./data/postgres/bar:/data/postgres
+    networks:
+      - bar-network
+    restart: unless-stopped
+
+  happy-hour-db:
+    container_name: happy-hour-db
+    image: postgres
+    environment:
+      POSTGRES_DB: happy-hour
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+      - ./data/postgres/happy-hour:/data/postgres
+    networks:
+      - happy-hour-network
+    restart: unless-stopped
+
+  discovery:
+    restart: always
+    image: happyhourfinder/discovery
+    container_name: discovery
+    build:
+      context: ../discovery
+    networks:
+      - backend-network
+    ports:
+      - "8761:8761"
+
+  config-server:
+    restart: always
+    image: happyhourfinder/config-server
+    build:
+      context: ../config-server
+    environment:
+      SPRING_PROFILES_ACTIVE: native,dev
+      ENCRYPT_KEY: ${CONFIG_SERVER_ENCRYPT_KEY}
+      SPRING_SECURITY_USER_NAME: ${CONFIG_SERVER_USR}
+      SPRING_SECURITY_USER_PASSWORD: ${CONFIG_SERVER_PWD}
+    volumes:
+      - ../config:/config
+    networks:
+      - backend-network
+
+  zipkin:
+    restart: always
+    image: openzipkin/zipkin
+    networks:
+      - backend-network
+      - monitoring-network
+    ports:
+      - "9411:9411"
+
+  admin-server:
+    restart: always
+    image: happyhourfinder/admin
+    build:
+      context: ../admin
+    networks:
+      - backend-network
+    ports:
+     - "8080:8080"
+
+networks:
+  backend-network:
+    driver: bridge
+  bar-network:
+    driver: bridge
+  happy-hour-network:
+    driver: bridge
+  monitoring-network:
+    driver: bridge
