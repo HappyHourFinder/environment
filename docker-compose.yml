@@ -60,6 +60,8 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       CONFIG_SERVER_USR: ${CONFIG_SERVER_USR}
       CONFIG_SERVER_PWD: ${CONFIG_SERVER_PWD}
+      APP_KEYCLOAK_CLIENT_ID: hhf-api
+      APP_KEYCLOAK_CLIENT_SECRET: ${SECURITY_OAUTH2_CLIENT_CLIENTSECRET}
     networks:
       - backend-network
     ports:
