@@ -154,7 +154,40 @@ services:
     networks:
       - backend-network
     ports:
-     - "8080:8080"
+      - "8080:8080"
+
+
+
+
+  keycloak-db:
+    image: postgres
+    networks:
+      - keycloak-network
+    volumes:
+      - ./data/postgres/keycloak:/data/postgres
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+
+  keycloak:
+    image: jboss/keycloak:7.0.1
+    networks:
+      - backend-network
+      - keycloak-network
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: keycloak-db
+      DB_DATABASE: keycloak
+      DB_SCHEMA: public
+      DB_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+      KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD:-Pa55w0rd}
+    ports:
+      - 8090:8080
+    depends_on:
+      - keycloak-db
 
 
 
@@ -183,4 +216,6 @@ networks:
   happy-hour-network:
     driver: bridge
   monitoring-network:
+    driver: bridge
+  keycloak-network:
     driver: bridge
